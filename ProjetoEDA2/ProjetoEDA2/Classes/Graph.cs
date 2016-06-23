@@ -165,27 +165,11 @@ namespace ProjetoEDA2.Classes
         /// <returns></returns>
         public int CalculaTempoGasto(string from)
         {
-            Node n = Find(from);
             int tempo = 0;
-            Queue<Node> fila = new Queue<Node>();
-            fila.Enqueue(n);
-            n.Visited = true;
-            while (fila.Count > 0)
+            List<Node> paseio = DepthFirstSearch(from);
+            foreach(Node n in paseio)
             {
-                foreach (Edge e in n.Edges)
-                {
-                    if (e.To != null)
-                    {
-                        if (e.To.Visited != true)
-                        {
-
-                            fila.Enqueue(e.To);
-                            tempo += e.To.Tempo;
-                            e.To.Visited = true;
-                        }
-                    }
-                }
-                n = fila.Dequeue();
+                tempo += n.Tempo;
             }
             ClearVisited();
             return tempo;
