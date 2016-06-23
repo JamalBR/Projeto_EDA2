@@ -48,6 +48,11 @@ namespace ProjetoEDA2.Classes
         #region Métodos
 
         #region OperaçõesGrafo
+
+        public Node FindNode(string name)
+        {
+            return this.Find(name);
+        }
         /// <summary>
         /// Encontra o nó através do seu nome.
         /// </summary>
@@ -153,7 +158,49 @@ namespace ProjetoEDA2.Classes
                 return vizinho.ToArray();
             return null;
         }
+        /// <summary>
+        /// Calcula o tempo gasto para executar as tarefas a partir da tarefa inicial
+        /// </summary>
+        /// <param name="from">Tarefa inicial.</param>
+        /// <returns></returns>
+        public int CalculaTempoGasto(string from)
+        {
+            Node n = Find(from);
+            int tempo = 0;
+            Queue<Node> fila = new Queue<Node>();
+            fila.Enqueue(n);
+            n.Visited = true;
+            while (fila.Count > 0)
+            {
+                foreach (Edge e in n.Edges)
+                {
+                    if (e.To != null)
+                    {
+                        if (e.To.Visited != true)
+                        {
 
+                            fila.Enqueue(e.To);
+                            tempo += e.To.Tempo;
+                            e.To.Visited = true;
+                        }
+                    }
+                }
+                n = fila.Dequeue();
+            }
+            ClearVisited();
+            return tempo;
+        }
+
+        public void ClearVisited()
+        {
+            foreach(Node n in this.nodes)
+            {
+                if (n.Visited)
+                {
+                    n.Visited = false;
+                }
+            }
+        }
         /// <summary>
         /// Valida um caminho, retornando a lista de nós pelos quais ele passou.
         /// </summary>
@@ -249,7 +296,7 @@ namespace ProjetoEDA2.Classes
         /// <returns>A lista de nós visitada.</returns>
         public List<Node> ShortestPath(string startNode, string targetNode)
         {
-            //algoritmo de Dijkstra
+            //algoritmo de Djkistra
             Graph solution = new Graph();
             Stack<Node> p = new Stack<Node>();
             this.Find(startNode).Visited = true;

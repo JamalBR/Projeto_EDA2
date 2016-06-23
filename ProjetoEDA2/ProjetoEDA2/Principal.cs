@@ -52,9 +52,10 @@ namespace ProjetoEDA2
             EDA.Node[] nodes = this.graph.Nodes;
             // Limpa controles..
             txtNodeName.Clear();
+            txtTempoTarefa.Clear();
             cmbNodeFrom.Items.Clear();
             cmbNodeTo.Items.Clear();
-            cmbNodeNeighbourhood.Items.Clear();
+            cmbNodeCalc.Items.Clear();
             lstArcs.Items.Clear();
             // Carrega nós e agrupa arcos..
             foreach (EDA.Node node in nodes)
@@ -63,7 +64,7 @@ namespace ProjetoEDA2
                 // Adiciona nós ao combo..
                 cmbNodeFrom.Items.Add(node);
                 cmbNodeTo.Items.Add(node);
-                cmbNodeNeighbourhood.Items.Add(node);
+                cmbNodeCalc.Items.Add(node);
             }
             // Adiciona os arcos ao listbox..
             foreach (EDA.Edge edge in edges)
@@ -87,7 +88,7 @@ namespace ProjetoEDA2
             foreach (EDA.Node node in this.graph.Nodes)
             {
                 Glee.Node drawingNode = drawingGraph.AddNode(node.Name);
-                drawingNode.Attr.Shape = Glee.Shape.Circle;
+                drawingNode.Attr.Shape = Glee.Shape.Box;
                 if (highlightedNodes != null && Array.IndexOf(highlightedNodes, node) >= 0)
                 {
                     drawingNode.Attr.Color = Glee.Color.Red;
@@ -125,6 +126,11 @@ namespace ProjetoEDA2
             if (!String.IsNullOrEmpty(txtNodeName.Text.Trim()))
             {
                 this.graph.AddNode(txtNodeName.Text);
+                var n = this.graph.FindNode(txtNodeName.Text);
+                if (txtTempoTarefa.Modified)
+                    n.Tempo = Int32.Parse(txtTempoTarefa.Text);
+                else
+                    n.Tempo = 0;
             }
             SetGraphControls();
         }
@@ -183,12 +189,14 @@ namespace ProjetoEDA2
         /// <param name="e"></param>
         private void btnShowNeighbours_Click(object sender, EventArgs e)
         {
-            if (cmbNodeNeighbourhood.SelectedItem != null)
+            if (cmbNodeCalc.SelectedItem != null)
             {
-                string nodeFrom = (cmbNodeNeighbourhood.SelectedItem as EDA.Node).Name; 
-                EDA.Node[] neighbours = this.graph.GetNeighbours(nodeFrom);
+                string nodeFrom = (cmbNodeCalc.SelectedItem as EDA.Node).Name;
+                /*EDA.Node[] neighbours = this.graph.GetNeighbours(nodeFrom);
                 SetGraphControls(false);
-                DrawGraph(neighbours);
+                DrawGraph(neighbours);*/
+                int tempo = this.graph.CalculaTempoGasto(nodeFrom);
+                MessageBox.Show(tempo.ToString(), "Tempo Gasto", MessageBoxButtons.OK);
             }
         }
 
@@ -219,5 +227,9 @@ namespace ProjetoEDA2
 
         #endregion
 
+        private void gbOperations_Enter(object sender, EventArgs e)
+        {
+
+        }
     }
 }

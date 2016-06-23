@@ -33,9 +33,11 @@ namespace ProjetoEDA2.Classes
         /// <summary>
         /// A prioridade de execução da tarefa
         /// </summary>
-        public int prioridade;
-
-        //public 
+        public int priority { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
+        public int Tempo { get; set; }
 
         #endregion
 
@@ -60,6 +62,12 @@ namespace ProjetoEDA2.Classes
             this.Info = info;
         }
 
+        public Node(string name, object info, int priority) : this()
+        {
+            this.Name = name;
+            this.Info = info;
+            this.priority = priority;
+        }
         #endregion
 
         #region Métodos
