@@ -13,7 +13,10 @@ namespace ProjetoEDA2.Classes
     {
 
         #region Propriedades
-
+        /// <summary>
+        /// euristica
+        /// </summary>
+        public double eval { get; set; }
         /// <summary>
         /// O nome do nó dentro do grafo.
         /// </summary>
@@ -35,9 +38,11 @@ namespace ProjetoEDA2.Classes
         /// </summary>
         public int priority { get; set; }
         /// <summary>
-        /// 
+        /// Tempo para a tarefa ser executada
         /// </summary>
-        public int Tempo { get; set; }
+        public double Tempo { get; set; }
+
+        public List<String> requisito { get; set; }
 
         #endregion
 
@@ -49,6 +54,7 @@ namespace ProjetoEDA2.Classes
         public Node()
         {
             this.Edges = new List<Edge>();
+            this.requisito = new List<string>();
         }
 
         /// <summary>
@@ -67,6 +73,7 @@ namespace ProjetoEDA2.Classes
             this.Name = name;
             this.Info = info;
             this.priority = priority;
+
         }
         #endregion
 
@@ -90,6 +97,22 @@ namespace ProjetoEDA2.Classes
         {
             Edge edge = new Edge(this, to, cost);
             Edges.Add(edge);
+        }
+        /// <summary>
+        /// Remove o arco com origem igual ao nó atual 
+        /// </summary>
+        /// <param name="to"></param>
+        public void RemoveEdge(Node to)
+        {
+            Edge edge = new Edge(this, to, 0);
+            foreach(Edge e in Edges)
+            {
+                if(e.ToString() == edge.ToString())
+                {
+                    Edges.Remove(e);
+                    break;
+                }
+            }
         }
 
         #endregion

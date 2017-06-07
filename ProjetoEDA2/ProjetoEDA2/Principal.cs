@@ -99,7 +99,7 @@ namespace ProjetoEDA2
             foreach (EDA.Edge edge in edges)
             {
                 Glee.Edge drawingEdge = drawingGraph.AddEdge(edge.From.Name, edge.To.Name);
-                drawingEdge.Attr.Label = String.Format("{0:F4}", edge.Cost);
+                //drawingEdge.Attr.Label = String.Format("{0:F4}", edge.Cost);
             }
             // Gera controle de desenho..
             GleeUI.GViewer viewer = new GleeUI.GViewer();
@@ -127,8 +127,12 @@ namespace ProjetoEDA2
             {
                 this.graph.AddNode(txtNodeName.Text);
                 var n = this.graph.FindNode(txtNodeName.Text);
-                if (txtTempoTarefa.Modified)
-                    n.Tempo = Int32.Parse(txtTempoTarefa.Text);
+                if (!String.IsNullOrEmpty(txtPrioridadeTarefa.Text.Trim()))
+                    n.priority = Int32.Parse(txtPrioridadeTarefa.Text);
+                else
+                    n.priority = 0;
+                if (!String.IsNullOrEmpty(txtTempoTarefa.Text.Trim()))
+                    n.Tempo = Double.Parse(txtTempoTarefa.Text);
                 else
                     n.Tempo = 0;
             }
@@ -156,13 +160,37 @@ namespace ProjetoEDA2
         /// <param name="e"></param>
         private void btnAddArc_Click(object sender, EventArgs e)
         {
-            if (cmbNodeTo.SelectedItem != null && cmbNodeFrom.SelectedItem != null && !String.IsNullOrEmpty(txtCost.Text.Trim()))
+            if (cmbNodeTo.SelectedItem != null && cmbNodeFrom.SelectedItem != null)
             { 
                 string nodeTo = (cmbNodeTo.SelectedItem as EDA.Node).Name;
                 string nodeFrom = (cmbNodeFrom.SelectedItem as EDA.Node).Name;
-                double cost = Double.Parse(txtCost.Text);
-                // Adiciona arco..
-                this.graph.AddEdge(nodeFrom, nodeTo, cost);
+                if(nodeTo == nodeFrom)
+                {
+                    MessageBox.Show("Uma tarefa não pode depender dela mesma para iniciar","Erro ao adicionar dependência", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                else
+                {
+                    // Adiciona arco e o requisito
+                    this.graph.AddEdge(nodeFrom, nodeTo, 0);
+                    this.graph.AddRequisito(nodeFrom, nodeTo);
+                }
+            }
+            SetGraphControls();
+        }
+        /// <summary>
+        /// clique do botão que remove um arco
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnRemoveEdge_Click(object sender, EventArgs e)
+        {
+            if (cmbNodeTo.SelectedItem != null && cmbNodeFrom.SelectedItem != null)
+            {
+                string nodeTo = (cmbNodeTo.SelectedItem as EDA.Node).Name;
+                string nodeFrom = (cmbNodeFrom.SelectedItem as EDA.Node).Name;
+                //remove arco e requisito
+                this.graph.RemoveEdge(nodeFrom, nodeTo);
+                this.graph.RemoveRequisito(nodeFrom, nodeTo);
             }
             SetGraphControls();
         }
@@ -183,53 +211,142 @@ namespace ProjetoEDA2
         }
 
         /// <summary>
-        /// Clique do botão de exibir vizinhos.
+        /// Clique do botão de calcular o tempo gasto para executar todas as tarefas.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void btnShowNeighbours_Click(object sender, EventArgs e)
+        private void btnTempoGasto_Click(object sender, EventArgs e)
         {
             if (cmbNodeCalc.SelectedItem != null)
             {
                 string nodeFrom = (cmbNodeCalc.SelectedItem as EDA.Node).Name;
-                /*EDA.Node[] neighbours = this.graph.GetNeighbours(nodeFrom);
-                SetGraphControls(false);
-                DrawGraph(neighbours);*/
-                int tempo = this.graph.CalculaTempoGasto(nodeFrom);
+                var tempo = this.graph.CalculaTempoGasto(nodeFrom);
                 MessageBox.Show(tempo.ToString(), "Tempo Gasto", MessageBoxButtons.OK);
             }
         }
 
         /// <summary>
-        /// Clique do botão de validar caminhos.
+        /// Clique do botão de calcular a soma da prioridade de todas as tarefas.
         /// </summary>
         /// <param name="sender"></param>
         /// <param name="e"></param>
-        private void btnShowPath_Click(object sender, EventArgs e)
+        private void Ptotal_Click(object sender, EventArgs e)
+        {
+            if (cmbNodeCalc.SelectedItem != null)
+            {
+                string nodeFrom = (cmbNodeCalc.SelectedItem as EDA.Node).Name;
+                var tempo = this.graph.CalculaPrioridade(nodeFrom);
+                MessageBox.Show(tempo.ToString(), "Prioridade Total", MessageBoxButtons.OK);
+            }
+        }
+
+        /// <summary>
+        /// Clique do botão de Calcular tempo total de varias tarefas.
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnTempoTotalVarios_Click(object sender, EventArgs e)
         {
             if (!String.IsNullOrEmpty(txtPath.Text.Trim()))
             {
-                EDA.Node[] pathNodes = null;
-                string[] path = txtPath.Text.Split(new char[] { '-' }, StringSplitOptions.RemoveEmptyEntries);
-                // Verifica se o caminho existe..
-                if (this.graph.IsValidPath(ref pathNodes, path))
+                string[] path = txtPath.Text.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                if (path != null)
                 {
-                    MessageBox.Show("O caminho é válido", "Validação de Caminho", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
-                else
-                {
-                    MessageBox.Show("O caminho é inválido", "Validação de Caminho", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    var v = this.graph.CalculaTempoGasto(path);
+                    MessageBox.Show(v.ToString(), "Tempo Gasto", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 }
                 SetGraphControls(false);
-                DrawGraph(pathNodes);
             }
+        }
+        /// <summary>
+        /// clique do botão que ordena as tarefas por prioridade
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnPrioridade_Click(object sender, EventArgs e)
+        {
+            lstTarefas.Items.Clear();
+            List<EDA.Node> l = this.graph.OrdenaPrioridade();
+            foreach (EDA.Node n in l)
+            {
+                lstTarefas.Items.Add(n.Name + "->" + n.priority);
+            }
+        }
+        /// <summary>
+        /// clique do botão que ordena as tarefas por tempo
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnTempo_Click(object sender, EventArgs e)
+        {
+            lstTarefas.Items.Clear();
+            List<EDA.Node> l = this.graph.OrdenaTempo();
+            foreach (EDA.Node n in l)
+            {
+                lstTarefas.Items.Add(n.Name + "->" + n.Tempo);
+            }
+        }
+        /// <summary>
+        /// clique do botão que executa a busca
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnExeBuscaCega_Click(object sender, EventArgs e)
+        {
+            if (!String.IsNullOrEmpty(txtTempoTotal.Text))
+            {
+                lstSequenciaTarefas.Items.Clear();
+                var tempo = Double.Parse(txtTempoTotal.Text);
+                EDA.BuscaCega b = new EDA.BuscaCega();
+                var resp = b.Solucao(tempo, this.graph);
+                lstSequenciaTarefas.Items.Add("Resposta: " + resp);
+            }
+            else
+                MessageBox.Show("É necessario informar um tempo máximo", "Falha ao executar a busca", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        /// <summary>
+        /// clique do botão que executa a busca A*
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void btnExecAEstrela_Click(object sender, EventArgs e)
+        {
+            if (!String.IsNullOrEmpty(txtTempoTotal.Text))
+            {
+                lstSequenciaTarefas.Items.Clear();
+                var tempo = Double.Parse(txtTempoTotal.Text);
+                EDA.BuscaAEstrela b = new EDA.BuscaAEstrela();
+                var resp = b.Solucao(tempo, this.graph);
+                lstSequenciaTarefas.Items.Add("Resposta: " + resp);
+            }
+            else
+                MessageBox.Show("É necessario informar um tempo máximo","Falha ao executar a busca",MessageBoxButtons.OK,MessageBoxIcon.Error);
+        }
+
+        private void btnPreDef1_Click(object sender, EventArgs e)
+        {
+            string[] nodes = { "T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10" };
+            int aux = 0;
+            foreach (string s in nodes)
+            {
+                aux += 1;
+                this.graph.AddNode(s);
+                var n = this.graph.FindNode(s);
+                n.Tempo = aux;
+            }
+            SetGraphControls();
+        }
+
+        private void btnPreDef2_Click(object sender, EventArgs e)
+        {
+
         }
 
         #endregion
 
         private void gbOperations_Enter(object sender, EventArgs e)
         {
-
+           
         }
     }
 }

@@ -48,11 +48,16 @@ namespace ProjetoEDA2.Classes
         #region Métodos
 
         #region OperaçõesGrafo
-
+        /// <summary>
+        /// Encontra o nó no grafo
+        /// </summary>
+        /// <param name="name"></param>
+        /// <returns></returns>
         public Node FindNode(string name)
         {
             return this.Find(name);
         }
+
         /// <summary>
         /// Encontra o nó através do seu nome.
         /// </summary>
@@ -90,7 +95,7 @@ namespace ProjetoEDA2.Classes
             Node node = new Node(name, info);
             nodes.Add(node);
         }
-
+        
         /// <summary>
         /// Remove um nó do grafo.
         /// </summary>
@@ -137,36 +142,31 @@ namespace ProjetoEDA2.Classes
             Node nF, nT;
             nF = Find(from);
             nT = Find(to);
-            //Edge edge = new Edge(nF, nT, cost);
             nF.AddEdge(nT, cost);
         }
 
         /// <summary>
-        /// Obtem todos os nós vizinhos de determinado nó.
+        /// Remove o arco entre dois nós
         /// </summary>
-        /// <param name="node">O nó origem.</param>
-        /// <returns></returns>
-        public Node[] GetNeighbours(string from)
+        /// <param name="from"></param>
+        /// <param name="to"></param>
+       public void RemoveEdge(string from, string to)
         {
-            Node n = Find(from);
-            List<Node> vizinho = new List<Node>();
-            foreach (Edge e in n.Edges)
-            {
-                vizinho.Add(e.To);
-            }
-            if (vizinho != null)
-                return vizinho.ToArray();
-            return null;
+            Node nF, nT;
+            nF = Find(from);
+            nT = Find(to);
+            nF.RemoveEdge(nT);
         }
+
         /// <summary>
         /// Calcula o tempo gasto para executar as tarefas a partir da tarefa inicial
         /// </summary>
         /// <param name="from">Tarefa inicial.</param>
         /// <returns></returns>
-        public int CalculaTempoGasto(string from)
+        public double CalculaTempoGasto(string from)
         {
-            int tempo = 0;
-            List<Node> paseio = DepthFirstSearch(from);
+            double tempo = 0;
+            List<Node> paseio = BreadthFirstSearch(from);
             foreach(Node n in paseio)
             {
                 tempo += n.Tempo;
@@ -175,6 +175,65 @@ namespace ProjetoEDA2.Classes
             return tempo;
         }
 
+        /// <summary>
+        /// Calcula a prioridade total
+        /// </summary>
+        /// <param name="from">Tarefa inicial.</param>
+        /// <returns></returns>
+        public double CalculaPrioridade(string from)
+        {
+            double prioridade = 0;
+            List<Node> paseio = BreadthFirstSearch(from);
+            foreach (Node n in paseio)
+            {
+                prioridade += n.priority;
+            }
+            ClearVisited();
+            return prioridade;
+        }
+
+        /// <summary>
+        /// Ordena todos os nós pela prioridade em ordem decrescente
+        /// </summary>
+        /// <returns></returns>
+        public List<Node> OrdenaPrioridade()
+        {
+            List<Node> ordem = this.nodes.OrderByDescending(o => o.priority).ToList();
+            return ordem;
+        }
+
+        /// <summary>
+        /// Ordena os nós pelo tempo em ordem decrescente
+        /// </summary>
+        /// <returns></returns>
+        public List<Node> OrdenaTempo()
+        {
+            List<Node> ordem = this.nodes.OrderByDescending(o => o.Tempo).ToList();
+            return ordem;
+        }
+
+        /// <summary>
+        /// Calculo o tempo gasto de varias tarefas ou uma.
+        /// </summary>
+        /// <param name="from"></param>
+        /// <returns></returns>
+        public double CalculaTempoGasto(string[] from)
+        {
+            double tempo = 0;
+            foreach (String s in from) {
+                List<Node> paseio = BreadthFirstSearch(s);
+                foreach (Node n in paseio)
+                {
+                    tempo += n.Tempo;
+                }
+                ClearVisited();
+            }
+            
+            return tempo;
+        }
+        /// <summary>
+        /// Limpa os nós que foram visitados
+        /// </summary>
         public void ClearVisited()
         {
             foreach(Node n in this.nodes)
@@ -186,36 +245,28 @@ namespace ProjetoEDA2.Classes
             }
         }
         /// <summary>
-        /// Valida um caminho, retornando a lista de nós pelos quais ele passou.
+        /// Adiciona o requisito para execução de uma tarefa(nó)
         /// </summary>
-        /// <param name="nodes">A lista de nós por onde passou.</param>
-        /// <param name="path">O nome de cada nó na ordem que devem ser encontrados.</param>
-        /// <returns></returns>
-        public bool IsValidPath(ref Node[] nodes, params string[] path)
+        /// <param name="from"></param>
+        /// <param name="to"></param>
+        public void AddRequisito(string from, string to)
         {
-            bool contrl = false;
-            Node n;
-            for (int i = 0; i < path.Length - 1; i++)
-            {
-                n = Find(path[i]);
-                contrl = false;
-                foreach (Edge e in n.Edges)
-                {
-                    if (e.To.Name == path[i + 1])
-                    {
-                        contrl = true;
-                    }
-                }
-                if (contrl == false)
-                {
-                    return false;
-                }
-            }
-            return true;
+            Node n = Find(to);
+            n.requisito.Add(from);
+        }
+        /// <summary>
+        /// Remove o requisito de execução da tarefa
+        /// </summary>
+        /// <param name="from"></param>
+        /// <param name="to"></param>
+        public void RemoveRequisito(string from, string to)
+        {
+            Node n = Find(to);
+            n.requisito.Remove(from);
         }
         #endregion
 
-        #region Busca e Caminhos
+        #region Caminhos
 
         /// <summary>
         /// Executa o caminho em profundidade buscando o nó alvo.
@@ -258,6 +309,7 @@ namespace ProjetoEDA2.Classes
             n.Visited = true;
             while (fila.Count > 0)
             {
+                n = fila.Dequeue();
                 foreach (Edge e in n.Edges)
                 {
                     if (e.To.Visited != true)
@@ -267,76 +319,8 @@ namespace ProjetoEDA2.Classes
                     }
                 }
                 l.Add(n);
-                n = fila.Dequeue();
             }
             return l;
-        }
-
-        /// <summary>
-        /// Executa o algoritmo de caminho mínimo (Djkistra) buscando o nó alvo.
-        /// </summary>
-        /// <param name="startNode">O nó inicio.</param>
-        /// <param name="targetNode">O nó alvo.</param>
-        /// <returns>A lista de nós visitada.</returns>
-        public List<Node> ShortestPath(string startNode, string targetNode)
-        {
-            //algoritmo de Djkistra
-            Graph solution = new Graph();
-            Stack<Node> p = new Stack<Node>();
-            this.Find(startNode).Visited = true;
-            bool finished = false;
-
-            solution.AddNode(startNode, 0);
-            while (solution.Find(targetNode) == null && !finished)
-            {
-                double min = double.MaxValue, edgeCost = 0;//cria o min e atribui o maior valor de um double
-                String from = null;
-                String to = null;
-
-                foreach (Node ns in solution.Nodes)
-                {
-                    Node no = this.Find(ns.Name);
-
-                    foreach (Edge e in no.Edges)
-                    {
-                        if (!e.To.Visited)
-                        {
-                            double cost = e.Cost + Convert.ToDouble(ns.Info);
-                            if (cost < min)
-                            {
-                                min = cost;
-                                edgeCost = e.Cost;
-                                from = e.From.Name;
-                                to = e.To.Name;
-                            }
-                        }
-                    }
-                }
-                if (from != null)
-                {
-                    solution.AddNode(to, min);
-                    solution.AddEdge(to, from, edgeCost);
-                    this.Find(to).Visited = true;
-                }
-                else
-                {
-                    finished = true;
-                }
-            }
-            Node target = solution.Find(targetNode);
-            if (target == null)
-            {
-                return null;
-            }
-            p.Push(target);
-            while (target.Edges.Count > 0)
-            {
-                target = target.Edges[0].To;
-                p.Push(target);
-            }
-            p.Push(target);
-
-            return new List<Node>(p.ToArray());
         }
         #endregion
         #endregion
